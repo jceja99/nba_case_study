@@ -1,0 +1,54 @@
+---
+title: "NBA_Case_Study"
+date: "2026-02-03"
+format: html
+editor: visual
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, echo=FALSE}
+#An import of libraries I find useful for analysis. 
+if (!require("pacman"))
+  install.packages("pacman")
+
+pacman::p_load("tidyverse","stats","janitor","scales","openxlsx","gridExtra","skimr","ggsci","summarytools","DescTools","Hmisc","sjmisc","readxl","data.table",
+               "conflicted","clipr")
+
+conflicted::conflict_prefer("filter", "dplyr")
+conflicted::conflict_prefer("last", "dplyr")
+conflict_prefer("first", "dplyr")
+conflicts_prefer(sjmisc::`%nin%`)
+```
+
+```{r read_data}
+#Read data needed
+
+###STATUS: Request Code completed, just need to download and insert BOY MOY data on 2/10/25 and run all the code/function again.
+
+#read in selected schools list, SIB, and high dose students for 24-25
+#if services for a vendor in any cycle were launched, then the vendor is considered a high dose tutoring vendor for 24-25
+Selected_Schools <- read_xlsx("Data/2024-2025 Schools with Tutoring Services.xlsx",col_types = "text",skip=1) %>% clean_names(case="parsed") %>% 
+  mutate(School_Year = "2024-2025") %>% 
+  select(School_Year,SCHOOL,Vendor_Cycle_1 = Vendor_9,Services_Launched_Cycle_1,
+         Vendor_Cycle_2 = Vendor_13,Services_Launched_Cycle_2,
+         Vendor_Cycle_3 = Vendor_17,Services_Launched_Cycle_3)
+
+High_Dose_2025 <- read_csv("Data/High Dose Tutoring Students 2025.csv", col_types = cols(.default=col_character())) %>% clean_names(case="parsed")
+
+SIB_2025 <- read_xlsx("Data/SIB7013-20242025.xlsx",sheet="Programs",col_types="text") %>% clean_names(case="parsed") %>% 
+  select(Program_Location_Code,Program_Name,School_Location_Code)
+
+
+#assessment data (this is 2324 data until I pull the data on Monday 2/10 for 2425)
+iReady_ELA_2025 <- read_csv("Data/iReady ELA 2025 BOYMOY.csv", col_types = cols(.default=col_character())) %>% clean_names(case="parsed") %>% 
+  mutate(SUBJECT = "ELA")
+
+iReady_Math_2025 <- read_csv("Data/iReady Math 2025 BOYMOY.csv", col_types = cols(.default=col_character())) %>% clean_names(case="parsed") %>% 
+  mutate(SUBJECT = "MATH")
+
+Dibels_2025 <- read_csv("Data/Dibels 2025 BOYMOY.csv", col_types = cols(.default=col_character())) %>% clean_names(case="parsed")
+
+```
