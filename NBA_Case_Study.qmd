@@ -5,50 +5,104 @@ format: html
 editor: visual
 ---
 
+# NBA Case Study
+The purpose of this analysis is exploratory. We are to investigate NBA historical data from decades ago until now and identify key trends of how the game is played and what direction the game may be headed. We are to investigate data regarding game stats, team stats, player stats, player traits, revenue, and public sentiment whilst demonstrating proficiency in data analysis tools, and the analytical process.
+
+The NBA game stats, team stats, player stats, and player traits data stem from a Kaggle dataset (sourced from NBA.com) with multiple data files available at the following link:
+https://www.kaggle.com/datasets/eoinamoore/historical-nba-data-and-player-box-scores/data
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Import Libraries
+We'll begin by importing some essential libraries that will help us with data cleaning and analysis.
 ```{r libraries, echo=FALSE}
 #An import of libraries I find useful for analysis. 
 if (!require("pacman"))
   install.packages("pacman")
 
-pacman::p_load("tidyverse","stats","janitor","scales","openxlsx","gridExtra","skimr","ggsci","summarytools","DescTools","Hmisc","sjmisc","readxl","data.table",
+#The p_load function from pacman allows any user who has the package to run the code and R will automatically download the packages (if needed), and load them to the current session
+pacman::p_load("tidyverse","stats","janitor","scales",
+"openxlsx","gridExtra","skimr","ggsci","summarytools","DescTools","sjmisc","readxl","data.table",
                "conflicted","clipr")
 
+#using conflicted package to set the default package to use when function names overlap
 conflicted::conflict_prefer("filter", "dplyr")
 conflicted::conflict_prefer("last", "dplyr")
 conflict_prefer("first", "dplyr")
-conflicts_prefer(sjmisc::`%nin%`)
+
 ```
 
+# Read Data
+We will now read in some relevant datasets.
 ```{r read_data}
-#Read data needed
+#Code chunk to read in different datasets
 
-###STATUS: Request Code completed, just need to download and insert BOY MOY data on 2/10/25 and run all the code/function again.
+#dataset from Kaggle that contains different player traits/characteristics and IDs for each player
+#
+Player_Traits <-
+  read_csv("Data/Players.csv") %>% 
+  clean_names(case="snake")
 
-#read in selected schools list, SIB, and high dose students for 24-25
-#if services for a vendor in any cycle were launched, then the vendor is considered a high dose tutoring vendor for 24-25
-Selected_Schools <- read_xlsx("Data/2024-2025 Schools with Tutoring Services.xlsx",col_types = "text",skip=1) %>% clean_names(case="parsed") %>% 
-  mutate(School_Year = "2024-2025") %>% 
-  select(School_Year,SCHOOL,Vendor_Cycle_1 = Vendor_9,Services_Launched_Cycle_1,
-         Vendor_Cycle_2 = Vendor_13,Services_Launched_Cycle_2,
-         Vendor_Cycle_3 = Vendor_17,Services_Launched_Cycle_3)
+Player_Stats <-
+  read_csv("Data/PlayerStatistics.csv") %>% 
+  clean_names(case="snake")
 
-High_Dose_2025 <- read_csv("Data/High Dose Tutoring Students 2025.csv", col_types = cols(.default=col_character())) %>% clean_names(case="parsed")
+Game_Details <-
+  read_csv("Data/Games.csv") %>% 
+  clean_names(case="snake")
 
-SIB_2025 <- read_xlsx("Data/SIB7013-20242025.xlsx",sheet="Programs",col_types="text") %>% clean_names(case="parsed") %>% 
-  select(Program_Location_Code,Program_Name,School_Location_Code)
-
-
-#assessment data (this is 2324 data until I pull the data on Monday 2/10 for 2425)
-iReady_ELA_2025 <- read_csv("Data/iReady ELA 2025 BOYMOY.csv", col_types = cols(.default=col_character())) %>% clean_names(case="parsed") %>% 
-  mutate(SUBJECT = "ELA")
-
-iReady_Math_2025 <- read_csv("Data/iReady Math 2025 BOYMOY.csv", col_types = cols(.default=col_character())) %>% clean_names(case="parsed") %>% 
-  mutate(SUBJECT = "MATH")
-
-Dibels_2025 <- read_csv("Data/Dibels 2025 BOYMOY.csv", col_types = cols(.default=col_character())) %>% clean_names(case="parsed")
 
 ```
+
+# Previewing the raw data
+```{r preview_raw_data}
+
+Player_Traits %>% 
+  glimpse()
+
+Player_Traits %>% 
+  distinct(guard,forward,center)
+
+
+
+# Notes about ther Player Traits dataset:
+# The dataset is small at only 6,682 rows and 14 columns.
+# The player traits dataset contains attributes such as height, weight, name, birth date, country, position type (binary column), and draft year.
+# The person ID column will likely be key in linking data files within the Kaggle historical NBA dataset.
+# Some of the columns have some distinct values that do not align. For example the guard column has the values 0, 1, NA, and false. Perhaps a codebook for the dataset would be helpful for treating the NAs and falses as they may mean something I'm not sure of.
+# It looks like some players are listed as both a guard and a forward, or both a forward and center
+
+Player_Stats %>% 
+  glimpse()
+
+Player_Stats %>% 
+  distinct(game_date_time_est) %>% 
+  arrange(game_date_time_est)
+
+Player_Stats %>% 
+  distinct(game_date_time_est) %>% 
+  arrange(desc(game_date_time_est))
+
+Player_Stats %>% 
+  distinct(game_type)
+
+# Notes about the Player Statistics dataset:
+# The dataset is 1.6 million rows with 35 columns.
+# The dataset seems to represent different individual NBA games with individual player stats attached for that game. 
+# A quick distinct on game_type column shows that there are All-Star games, preseason, emirates cup, etc. included in the data. We'll likely need to filter them out when analyzing regular season.
+#The earliest game that I can find in the data is from 1946-11-26 and the latest game is 2026-02-15. I may restrict the dates to include a certain number of seasons since the NBA has changed tremendously since the 1940s.
+
+Game_Details %>% 
+  glimpse()
+
+# Notes about the Game Details dataset:
+# This data contains the different game details for each
+
+```
+
+- Upon previewing the data I've made a few observations:
+1. I will have to clean some of the columns to make sure the distinct data values are consistent.
+2. I will have to create a column which denotes the season that the game was played in (Ex: 2022-23 season, 2023-24 season) based on the dates of the games.
